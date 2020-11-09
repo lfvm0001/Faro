@@ -23,15 +23,23 @@ class laser_options():
         read_inst = [2, 48, 48, 48, 48, 48, 48, 50, 48, 49, 67, 48, 50, 48, 51, 48, 48, 48, 56, 48, 48, 49, 3, 75]
         response = self.wr_port(read_inst)
         
-        end_code = response[5] + response[6] + response[11] + response[12] + response[13] + response[14]
-
-        if end_code == 288:
-            print("successful communication")
-   
-            response = response.decode()        
-            data = "0x" + response[27] + response[28] + response[29] + response[30] + response[31] + response[32] + response[33] + response[34]
-            data = int(data, 16)
-            data_mm = float(data/1000000)
+        
+        if response[5] == 48 and response[6] == 48 and response[11] == 48 and response[12] == 48 and response[13] == 48 and response[14] == 48:
+            print("Successful communication")
+            
+            if response[27] == 55 and response[28] == 70 and response[29] == 70 and response[30] == 70 and response[31] == 70 and response[32] == 70 and response[33] == 70 and response[34] == 70:
+                print("Error during the measure")
+                data_mm = "null"
+                
+            else: 
+                response = response.decode()
+                data = "0x" + response[27] + response[28] + response[29] + response[30] + response[31] + response[32] + response[33] + response[34]
+                data = int(data, 16)
+  
+                if response[27] == "F":
+                    data = (data -(1<<32))
+                
+                data_mm = float(data/1000000)
             
         else:
             print("Error during the communication")
@@ -43,14 +51,16 @@ class laser_options():
     def set_zero(self):
         zero_inst = [2, 48, 48, 48, 48, 48, 48, 50, 48, 50, 67, 48, 67, 51, 70, 48, 48, 48, 56, 48, 48, 49, 48, 48, 48, 48, 48, 48, 48, 49, 3, 78]
         response = self.wr_port(zero_inst)
-        
-        end_code = response[5] + response[6] 
-
-        if end_code == 96:
-            result = "successful"
+         
+        if response[5] == 48 and response[6] == 48:
+            measure=laser.read_value()
+            if (measure < 1) and (measure > -1): 
+                result = "Successful"
+            else:
+                result = "Fail"
             
         else:
-            result = "fail"
+            result = "Fail"
     
         return result
         
@@ -72,11 +82,12 @@ def main():
     laser = laser_options(laserCOM)
     
     while True:
+        print("\n**************************************************************")
         opt = input("Do you want to: Read laser(R), Set Zero(Z) or Exit(E):  ")
         
         if opt == "R" or opt == "r":
             measure=laser.read_value()
-            if measure == "null":
+            if measure == "null" :
                 print("Please run again")
             else:
                 print("The actual mesaure is: " + str(measure))
