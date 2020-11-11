@@ -28,7 +28,7 @@ class laser_options():
             print("Successful communication")
             
             if response[27] == 55 and response[28] == 70 and response[29] == 70 and response[30] == 70 and response[31] == 70 and response[32] == 70 and response[33] == 70 and response[34] == 70:
-                print("Error during the measure")
+                print("Error during the command")
                 data_mm = "null"
                 
             else: 
@@ -53,14 +53,17 @@ class laser_options():
         response = self.wr_port(zero_inst)
          
         if response[5] == 48 and response[6] == 48:
-            measure=laser.read_value()
-            if (measure < 1) and (measure > -1): 
-                result = "Successful"
+            measure=self.read_value()
+            
+            if measure == "null":
+                result = "Error"
+            elif (int(measure) < 1) and (int(measure) > -1): 
+                result = "Finalizó correctamente"
             else:
-                result = "Fail"
+                result = "Error"
             
         else:
-            result = "Fail"
+            result = "Error"
     
         return result
         
@@ -70,6 +73,7 @@ def main():
     laserCOM = "null"    
     
     for port in comPorts:
+                     #VID:PID=067B:2303 --> robot
         if re.search('VID:PID=0590:004D', str(port.hwid)):
             laserCOM = port.device
             
@@ -86,14 +90,14 @@ def main():
         opt = input("Do you want to: Read laser(R), Set Zero(Z) or Exit(E):  ")
         
         if opt == "R" or opt == "r":
-            measure=laser.read_value()
+            measure = laser.read_value()
             if measure == "null" :
                 print("Please run again")
             else:
                 print("The actual mesaure is: " + str(measure))
                 
         elif opt == "Z" or opt == "z":
-            status=laser.set_zero()
+            status = laser.set_zero()
             print("Set Zero: " + status)
             
         elif opt == "E" or opt == "e":
