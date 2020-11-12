@@ -2,6 +2,7 @@ import serial.tools.list_ports
 from laser_rw import laser_options
 from tkinter import *
 import serial
+import time
 import re
 
     
@@ -13,6 +14,7 @@ class GUI():
         self.laserMeasure = StringVar()
         self.robotMeasure = StringVar()
         self.punto = 0
+        self.file = time.strftime("%Y%m%d-%H%M%S") + ".txt"
 
 
     #Funciones
@@ -56,7 +58,7 @@ class GUI():
                 self.msj_text.insert(INSERT, "No debe dejar ninguna coordenada sin asignar..\n")
                 self.msj_text.see(END)
             else:
-                pose = "0;"+self.x_txt.get()+";"+self.y_txt.get()+";"+self.z_txt.get()+";"+self.rx_txt.get()+";"+self.ry_txt.get()+";"+self.rz_txt.get()+";\n"
+                pose = "0,"+self.x_txt.get()+","+self.y_txt.get()+","+self.z_txt.get()+","+self.rx_txt.get()+","+self.ry_txt.get()+","+self.rz_txt.get()+";\n"
                 
                 try:
                     self.msj_text.insert(INSERT, "Enviando posición al robot...\n")
@@ -66,7 +68,6 @@ class GUI():
                     robotS.flushOutput()
                     robotS.flush() 
                     robotS.write(str(pose).encode('utf-8'))
-                    response=robotS.read_until('\n',None)
                     self.msj_text.insert(INSERT, "Posición enviada correctamente...\n")
                     self.msj_text.see(END)
                 
@@ -120,7 +121,7 @@ class GUI():
             self.msj_text.see(END)
         else:
         
-            pose = "3;"+self.x_txt.get()+";"+self.y_txt.get()+";"+self.z_txt.get()+";"+self.rx_txt.get()+";"+self.ry_txt.get()+";"+self.rz_txt.get()+";\n"
+            pose = "3,0,0,0,0,0,0;\n"
             
             try:
                 self.msj_text.insert(INSERT, "Leyendo posición al robot...\n")
@@ -130,7 +131,9 @@ class GUI():
                 robotS.flushOutput()
                 robotS.flush() 
                 robotS.write(str(pose).encode('utf-8'))
-                response=robotS.read_until('\n',None)
+                response = robotS.read_until('\n',None)
+                response = response.decode()
+                response = response.rstrip()
                 
                 self.robotMeasure.set(response)
                 self.msj_text.insert(INSERT, "Medición de posición finalizó correctamente...\n")
@@ -156,56 +159,31 @@ class GUI():
         
         
     def savePointCB(self):
-        if self.punto == 0:
-            self.table00.delete(0,END)
-            self.table00.insert(0,self.robotMeasure.get())
-            self.table01.delete(0,END)
-            self.table01.insert(0,self.laserMeasure.get())
-            
-            self.punto = 1
+        self.robotMeasure.set("")
+        self.laserMeasure.set("")
         
-        elif self.punto == 1:
-            self.table10.delete(0,END)
-            self.table10.insert(0,self.robotMeasure.get())
-            self.table11.delete(0,END)
-            self.table11.insert(0,self.laserMeasure.get())
-            
-            self.punto = 2
-            
-        elif self.punto == 2:
-            self.table20.delete(0,END)
-            self.table20.insert(0,self.robotMeasure.get())
-            self.table21.delete(0,END)
-            self.table21.insert(0,self.laserMeasure.get())
-            
-            self.punto = 3
-            
-        elif self.punto == 3:
-            self.table30.delete(0,END)
-            self.table30.insert(0,self.robotMeasure.get())
-            self.table31.delete(0,END)
-            self.table31.insert(0,self.laserMeasure.get())
-            
-            self.punto = 4
+        self.readRobotCB()
+        self.readLaserCB()
+
+        tableRobot = "table" + str(self.punto) + "0"
+        tableLaser = "table" + str(self.punto) + "1"
         
-        elif self.punto == 4:
-            self.table40.delete(0,END)
-            self.table40.insert(0,self.robotMeasure.get())
-            self.table41.delete(0,END)
-            self.table41.insert(0,self.laserMeasure.get())
-            
-            self.punto = 5
-            
-        else:
-            self.table50.delete(0,END)
-            self.table50.insert(0,self.robotMeasure.get())
-            self.table51.delete(0,END)
-            self.table51.insert(0,self.laserMeasure.get())
-            
-            self.punto = 0
+        exec("self." + tableRobot + ".delete(0,END)")
+        exec("self." + tableRobot + ".insert(0,'" + self.robotMeasure.get() + "')")
+        exec("self." + tableLaser + ".delete(0,END)")
+        exec("self." + tableLaser + ".insert(0,'" + self.laserMeasure.get() + "')")
         
-        self.msj_text.insert(INSERT, "Punto guardado...\n")
+        file = open(self.file,"a") 
+        file.write("'" + self.robotMeasure.get() + "' ") 
+        file.write("'" + self.laserMeasure.get() + "'\n") 
+        file.close()
+        self.msj_text.insert(INSERT, "Punto guardado en " + self.file +" ...\n")
         self.msj_text.see(END)
+        
+        if self.punto == 5:
+            self.punto = 0
+        else:
+            self.punto = self.punto + 1
         
    
     #Create GUI
@@ -213,7 +191,7 @@ class GUI():
         self.window.title("Interfaz Robot")
         
         self.window_height = 530
-        self.window_width  = 705
+        self.window_width  = 710
         
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
@@ -228,11 +206,11 @@ class GUI():
         pose_frame = LabelFrame(self.window, text="Mover robot")
         pose_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         cmds_frame = LabelFrame(self.window, text="Comandos")
-        cmds_frame.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        cmds_frame.grid(row=0, column=1, sticky="nsew", pady=10)
         data_frame = LabelFrame(self.window, text="Puntos")
-        data_frame.grid(row=1, column=1, sticky="nsew", padx=10, pady=10)
+        data_frame.grid(row=1, column=1, sticky="nsew", pady=10)
         info_frame = LabelFrame(self.window, text="Información")
-        info_frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=10, columnspan=2)
+        info_frame.grid(row=2, column=0, sticky="nsew", pady=10, columnspan=2)
         
         
         #Componentes de port_frame
@@ -286,12 +264,12 @@ class GUI():
         readLaser_buttom = Button(cmds_frame, text='Obtener medida laser:', command=self.readLaserCB, width=20)
         readLaser_buttom.grid(row=0, column=0, padx=10, pady=10)
         medida_laser = Message(cmds_frame, textvariable=self.laserMeasure, bg="white", justify=LEFT, width=1000)
-        medida_laser.grid(row=0, column=1)
+        medida_laser.grid(row=0, column=1, padx=5)
         
         readRobot_buttom = Button(cmds_frame, text='Obtener posición robot:', command=self.readRobotCB, width=20)
         readRobot_buttom.grid(row=1, column=0, padx=10, pady=10)
         medida_robot = Message(cmds_frame, textvariable=self.robotMeasure, bg="white", justify=LEFT, width=1000)
-        medida_robot.grid(row=1, column=1)
+        medida_robot.grid(row=1, column=1, padx=5)
         
         self.laserMeasure.set("                                             ")
         self.robotMeasure.set("                                             ")
@@ -302,31 +280,31 @@ class GUI():
         savePoint_buttom.grid(row=2, column=1, padx=10, pady=10)
         
         #Componentes de data_frame
-        self.table00 = Entry(data_frame, width=25)
-        self.table10 = Entry(data_frame, width=25)        
-        self.table20 = Entry(data_frame, width=25)       
-        self.table30 = Entry(data_frame, width=25)
-        self.table40 = Entry(data_frame, width=25)
-        self.table50 = Entry(data_frame, width=25)
-        self.table01 = Entry(data_frame, width=25)
-        self.table11 = Entry(data_frame, width=25)
-        self.table21 = Entry(data_frame, width=25)
-        self.table31 = Entry(data_frame, width=25)
-        self.table41 = Entry(data_frame, width=25)
-        self.table51 = Entry(data_frame, width=25)
+        self.table00 = Entry(data_frame, width=25, justify='center')
+        self.table10 = Entry(data_frame, width=25, justify='center')        
+        self.table20 = Entry(data_frame, width=25, justify='center')       
+        self.table30 = Entry(data_frame, width=25, justify='center')
+        self.table40 = Entry(data_frame, width=25, justify='center')
+        self.table50 = Entry(data_frame, width=25, justify='center')
+        self.table01 = Entry(data_frame, width=25, justify='center')
+        self.table11 = Entry(data_frame, width=25, justify='center')
+        self.table21 = Entry(data_frame, width=25, justify='center')
+        self.table31 = Entry(data_frame, width=25, justify='center')
+        self.table41 = Entry(data_frame, width=25, justify='center')
+        self.table51 = Entry(data_frame, width=25, justify='center')
         
-        self.table00.grid(row=0, column=0, padx=5, pady=5, sticky='nsew')
-        self.table10.grid(row=1, column=0, padx=5, pady=5, sticky='nsew')
-        self.table20.grid(row=2, column=0, padx=5, pady=5, sticky='nsew')
-        self.table30.grid(row=3, column=0, padx=5, pady=5, sticky='nsew')
-        self.table40.grid(row=4, column=0, padx=5, pady=5, sticky='nsew')
-        self.table50.grid(row=5, column=0, padx=5, pady=5, sticky='nsew')
-        self.table01.grid(row=0, column=1, padx=5, pady=5, sticky='nsew')
-        self.table11.grid(row=1, column=1, padx=5, pady=5, sticky='nsew')
-        self.table21.grid(row=2, column=1, padx=5, pady=5, sticky='nsew')
-        self.table31.grid(row=3, column=1, padx=5, pady=5, sticky='nsew')
-        self.table41.grid(row=4, column=1, padx=5, pady=5, sticky='nsew')
-        self.table51.grid(row=5, column=1, padx=5, pady=5, sticky='nsew')
+        self.table00.grid(row=0, column=0, padx=10, pady=5, sticky='nsew')
+        self.table10.grid(row=1, column=0, padx=10, pady=5, sticky='nsew')
+        self.table20.grid(row=2, column=0, padx=10, pady=5, sticky='nsew')
+        self.table30.grid(row=3, column=0, padx=10, pady=5, sticky='nsew')
+        self.table40.grid(row=4, column=0, padx=10, pady=5, sticky='nsew')
+        self.table50.grid(row=5, column=0, padx=10, pady=5, sticky='nsew')
+        self.table01.grid(row=0, column=1, padx=10, pady=5, sticky='nsew')
+        self.table11.grid(row=1, column=1, padx=10, pady=5, sticky='nsew')
+        self.table21.grid(row=2, column=1, padx=10, pady=5, sticky='nsew')
+        self.table31.grid(row=3, column=1, padx=10, pady=5, sticky='nsew')
+        self.table41.grid(row=4, column=1, padx=10, pady=5, sticky='nsew')
+        self.table51.grid(row=5, column=1, padx=10, pady=5, sticky='nsew')
         
         #Componentes de info_frame
         self.msj_text = Text(info_frame, height=5, width=80)
