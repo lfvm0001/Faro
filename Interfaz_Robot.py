@@ -29,23 +29,19 @@ class GUI():
             if re.search('VID:PID=0590:004D', str(port.hwid)):
                 self.laserPort.set(str(port.device))
                 laser = True
-                self.msj_text.insert(INSERT, "Laser: " + str(port.device) + "\n")
-                self.msj_text.see(END)
 
             if re.search('VID:PID=067B:2303', str(port.hwid)):
                 self.robotPort.set(str(port.device))
                 robot = True
-                self.msj_text.insert(INSERT, "Robot: " + str(port.device) + "\n")
-                self.msj_text.see(END)
 
         if laser == False:
             self.laserPort.set("Sin conexión")
-            self.msj_text.insert(INSERT, "Robot no encontrado en ningún puerto...En caso de conexion, actualizar puertos \n")
+            self.msj_text.insert(INSERT, "Robot no encontrado en ningún puerto... Actualizar puertos... \n")
             self.msj_text.see(END)
             
         if robot == False:
             self.robotPort.set("Sin conexión")
-            self.msj_text.insert(INSERT, "Laser no encontrado en ningún puerto...En caso de conexion, actualizar puertos \n")
+            self.msj_text.insert(INSERT, "Laser no encontrado en ningún puerto... Actualizar puertos... \n")
             self.msj_text.see(END)
             
             
@@ -55,13 +51,11 @@ class GUI():
             self.msj_text.insert(INSERT, "Para enviar posición, verificar conexión del robot ..\n")
             self.msj_text.see(END)
         else:
-        
             if self.x_txt.get() == "" or self.y_txt.get() == "" or self.z_txt.get() == "" or self.rx_txt.get() == "" or self.ry_txt.get() == "" or self.rz_txt.get() == "":
-                self.msj_text.insert(INSERT, "No debe dejar ninguna coordenada sin asignar..\n")
+                self.msj_text.insert(INSERT, "No debe dejar ninguna coordenada sin asignar...\n")
                 self.msj_text.see(END)
             else:
                 pose = "0,"+self.x_txt.get()+","+self.y_txt.get()+","+self.z_txt.get()+","+self.rx_txt.get()+","+self.ry_txt.get()+","+self.rz_txt.get()+";\n"
-                
                 try:
                     self.msj_text.insert(INSERT, "Enviando posición al robot...\n")
                     self.msj_text.see(END)
@@ -72,9 +66,8 @@ class GUI():
                     robotS.write(str(pose).encode('utf-8'))
                     self.msj_text.insert(INSERT, "Posición enviada correctamente...\n")
                     self.msj_text.see(END)
-                
                 except:
-                    self.msj_text.insert(INSERT, "Error en la conexión con Robot...Reintentar...\n")
+                    self.msj_text.insert(INSERT, "Error en la conexión con Robot... Reintentar...\n")
                     self.msj_text.see(END)
         
         
@@ -99,7 +92,8 @@ class GUI():
     def readLaserCB(self):
         self.actualizarCB()
         if self.laserPort.get() == "Sin conexión":
-            self.msj_text.insert(INSERT, "Para realizar lectura, verificar conexión del laser ..\n")
+            self.laserMeasure.set("")
+            self.msj_text.insert(INSERT, "Para realizar lectura, verificar conexión del laser...\n")
             self.msj_text.see(END)
         else:
             self.msj_text.insert(INSERT, "Realizando medición de laser...\n")
@@ -108,7 +102,8 @@ class GUI():
             measure = laser.read_value()
         
             if measure == "null" :
-                self.msj_text.insert(INSERT, "Error durante la medición...Reintentar...\n")
+                self.laserMeasure.set("")
+                self.msj_text.insert(INSERT, "Error durante la medición... Reintentar...\n")
                 self.msj_text.see(END)
             else:
                 self.laserMeasure.set(measure)
@@ -119,7 +114,8 @@ class GUI():
     def readRobotCB(self):
         self.actualizarCB()
         if self.robotPort.get() == "Sin conexión":
-            self.msj_text.insert(INSERT, "Para leer posición, verificar conexión del robot ..\n")
+            self.robotMeasure.set("")
+            self.msj_text.insert(INSERT, "Para leer posición, verificar conexión del robot...\n")
             self.msj_text.see(END)
         else:
         
@@ -142,14 +138,15 @@ class GUI():
                 self.msj_text.see(END)
 
             except:
-                self.msj_text.insert(INSERT, "Error en la conexión con Robot...Reintentar...\n")
+                self.robotMeasure.set("")
+                self.msj_text.insert(INSERT, "Error en la conexión con Robot... Reintentar...\n")
                 self.msj_text.see(END)
             
 
     def setZeroCB(self):
         self.actualizarCB()
         if self.laserPort.get() == "Sin conexión":
-            self.msj_text.insert(INSERT, "Para reiniciar la referencia, verificar conexión del laser ..\n")
+            self.msj_text.insert(INSERT, "Para reiniciar la referencia, verificar conexión del laser...\n")
             self.msj_text.see(END)
         else:
             self.msj_text.insert(INSERT, "Reiniciando la referencia del laser...\n")
@@ -166,59 +163,61 @@ class GUI():
         
         self.readRobotCB()
         self.readLaserCB()
-
-        tableRobot = "table" + str(self.punto) + "0"
-        tableLaser = "table" + str(self.punto) + "1"
         
-        exec("self." + tableRobot + ".delete(0,END)")
-        exec("self." + tableRobot + ".insert(0,'" + self.robotMeasure.get() + "')")
-        exec("self." + tableLaser + ".delete(0,END)")
-        exec("self." + tableLaser + ".insert(0,'" + self.laserMeasure.get() + "')")
-        
-        file = open(self.file,"a") 
-        file.write("'" + self.robotMeasure.get() + "' ") 
-        file.write("'" + self.laserMeasure.get() + "'\n") 
-        file.close()
-        self.msj_text.insert(INSERT, "Punto guardado en " + self.file +" ...\n")
-        self.msj_text.see(END)
-        
-        if self.punto == 5:
-            self.punto = 0
+        #if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
+        if self.laserPort.get() == "Sin conexión":
+            self.msj_text.insert(INSERT, "Robot o laser sin conexión...\n")
+            self.msj_text.see(END)
         else:
-            self.punto = self.punto + 1
+            tableRobot = "table" + str(self.punto) + "0"
+            tableLaser = "table" + str(self.punto) + "1"
+        
+            exec("self." + tableRobot + ".delete(0,END)")
+            exec("self." + tableRobot + ".insert(0,'" + self.robotMeasure.get() + "')")
+            exec("self." + tableLaser + ".delete(0,END)")
+            exec("self." + tableLaser + ".insert(0,'" + self.laserMeasure.get() + "')")
+        
+            file = open(self.file,"a") 
+            file.write(self.robotMeasure.get() + " ") 
+            file.write(self.laserMeasure.get() + "\n") 
+            file.close()
+            self.msj_text.insert(INSERT, "Punto guardado en " + self.file +" ...\n")
+            self.msj_text.see(END)
+        
+            if self.punto == 5:
+                self.punto = 0
+            else:
+                self.punto = self.punto + 1
 
 
-    def consulta(pos_enviada):
+    def consulta(self,pos_enviada):
         fin = 0
-        
         robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
-        robotS.flushInput()
-        robotS.flushOutput()
-        robotS.flush() 
-        
         cmd = "3,0,0,0,0,0,0;\n"
         
         while(fin==0):
-        
             robotS.write(str(cmd).encode('utf-8'))
             pos_actual = robotS.read_until('\n',None)
-                        
-            pos_actual = pos_actual.decode()
-            pos_actual = pos_actual.split(" ")
-
-            pos_actual_int = [0,0,0,0,0,0]
-            ind = 0
             
-            for i in pos_actual:
-                if not (i==""):
-                    pos_actual_int[ind] = float(i)
+            x=pos_actual.decode()
+            x=x.split(" ")
+            tam=len(pos_actual)
+            
+            pos_actual_int=[0,0,0,0,0,0]
+            d=0
+            for i in range(0,tam):
+            
+                if not (x[i]==""):
+                    pos_actual_int[d]=float(x[i])
+                    d=d+1
                     
-                    if(ind==5):
-                        break
-                    ind = ind+1
-                    
+                if(d==5):
+                    break
+            
             if pos_actual_int[0]==pos_enviada[0] and pos_actual_int[1]==pos_enviada[1] and pos_actual_int[2]==pos_enviada[2] and pos_actual_int[3]==pos_enviada[3] and pos_actual_int[4]==pos_enviada[4] and pos_actual_int[5]==pos_enviada[5]:
                 fin = 1
+                
+        robotS.close()
 
 
     def startAutoCB(self):
@@ -228,40 +227,41 @@ class GUI():
         self.actualizarCB()
         
         if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
-            self.autoMsj_text.insert(INSERT, "Para comenzar, conectar el robot y el laser ..\n")
+            self.autoMsj_text.insert(INSERT, "Para comenzar, conectar el robot y el laser...\n")
             self.autoMsj_text.see(END)
         else:
             if os.path.exists(self.file):
                 os.remove(self.file)
             
             x=[[0,0,0,0,0,0],
-            [57.46,47.6,100.56,0.01,-59.03,0],#refA
+            [57.46,47.6,100.56,0.01,-59.03,0],   #refA
             [-8.93,47.59,100.56,0.01,-59.03,0],
-            [35.57,103.44,-5.59,0.01,-7.05,0],#refB
+            [35.57,103.44,-5.59,0.01,-7.05,0],   #refB
             [-5.54,103.43,-5.59,0.01,-7.05,0],
-            [35.7,107.89,-10.22,0.06,-7.38,0],#refC
+            [35.7,107.89,-10.22,0.06,-7.38,0],   #refC
             [6.26,107.89,-10.22,0.06,-7.38,0],
-            [45.3,61.69,75.78,0.06,-47.08,0],#refD
+            [45.3,61.69,75.78,0.06,-47.08,0],    #refD
             [6.45,61.69,75.78,0.06,-47.08,0],
-            [47.81,26.33,132.83,0.06,-70.11,0],#refE,
+            [47.81,26.33,132.83,0.06,-70.11,0],  #refE
             [1.73,26.33,132.83,0.06,-70.11,0],
             [0,0,0,0,0,0]];
             
             for  i in range(0, len(x)):
                 x1 = "0,"+str(x[i][0])+","+str(x[i][1])+","+ str(x[i][2])+","+str(x[i][3])+","+str(x[i][4])+","+str(x[i][5])+";\n"
                 robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
-                robotS.flushInput()
-                robotS.flushOutput()
-                robotS.flush() 
-                robot.write(str(x1).encode('utf-8'))
+                robotS.write(str(x1).encode('utf-8'))
 
-                self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + x[i] + "...\n")
+                self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + str(x[i]) + "...\n")
                 self.autoMsj_text.see(END)
-
+                robotS.close()
+                
                 self.consulta(x[i])
                 
                 if i==1 or i==3 or i==5 or i==7 or i==9:
                     self.setZeroCB()
+                    self.autoMsj_text.insert(INSERT, "Reiniciando Referencia...\n")
+                    self.autoMsj_text.see(END)
+                    
                 if i==2 or i==4 or i==6 or i==8 or i==10:
                     self.readRobotCB()
                     self.readLaserCB()
@@ -270,8 +270,8 @@ class GUI():
                     self.autoMsj_text.see(END)
                     
                     file = open(self.file,"a") 
-                    file.write("'" + self.robotMeasure.get() + "' ") 
-                    file.write("'" + self.laserMeasure.get() + "'\n") 
+                    file.write(self.robotMeasure.get() + " ") 
+                    file.write(self.laserMeasure.get() + "\n") 
                     file.close()
                     
             self.autoMsj_text.insert(INSERT, "Puntos guardados en " + self.file +" ...\n")
@@ -294,13 +294,43 @@ class GUI():
         self.window.geometry("{}x{}+{}+{}".format(self.window_width, self.window_height, x_cordinate, y_cordinate))
         
         tabControl = ttk.Notebook(self.window)
-        tabManual = Frame(tabControl)
         tabAuto = Frame(tabControl)
+        tabManual = Frame(tabControl)
         
-        tabControl.add(tabManual, text='Manual') 
         tabControl.add(tabAuto, text='Auto') 
+        tabControl.add(tabManual, text='Manual') 
         tabControl.pack(expand = 1, fill ="both")
         
+        #Tab Auto
+        portAuto_frame = LabelFrame(tabAuto, text="Secuencia Automática")
+        portAuto_frame.grid(row=0, column=0, sticky="nsew", padx=15, pady=10)
+        infoAuto_frame = LabelFrame(tabAuto, text="Estado")
+        infoAuto_frame.grid(row=1, column=0, sticky="nsew", padx=15, pady=10)
+        startAuto_buttom = Button(tabAuto, text='Empezar', command=self.startAutoCB, width=20)
+        startAuto_buttom.grid(row=2, column=0, padx=10, pady=10)
+        
+        #Componentes de portAuto_frame
+        laserAuto_lbl = Label(portAuto_frame, text="Laser:")
+        laserAuto_lbl.grid(row=0, column=0, padx=10, pady=10)
+        robotAuto_lbl = Label(portAuto_frame, text="Robot:")
+        robotAuto_lbl.grid(row=1, column=0, padx=10, pady=10)
+        laserAuto_port = Message(portAuto_frame, textvariable=self.laserPort, bg="white", justify=LEFT, width=200)
+        laserAuto_port.grid(row=0, column=1)
+        robotAuto_port = Message(portAuto_frame, textvariable=self.robotPort, bg="white", justify=LEFT, width=200)
+        robotAuto_port.grid(row=1, column=1)
+        
+        #Componentes de infoAuto_frame
+        self.autoMsj_text = Text(infoAuto_frame, height=17, width=80)
+        self.autoMsj_text.insert(INSERT, "Esperando...\n")
+        self.autoMsj_text.see(END)
+        self.autoMsj_text.grid(row=0, column=0, padx=10, pady=10)
+        
+        scroll = Scrollbar(infoAuto_frame, command=self.autoMsj_text.yview)
+        scroll.grid(row=0, column=2, sticky='nsew')
+        self.autoMsj_text['yscrollcommand'] = scroll.set
+        
+        
+        #Tab Manual
         port_frame = LabelFrame(tabManual, text="Puertos")
         port_frame.grid(row=0, column=0, sticky="nsew", padx=15, pady=10)
         pose_frame = LabelFrame(tabManual, text="Mover robot")
@@ -311,14 +341,6 @@ class GUI():
         data_frame.grid(row=1, column=1, sticky="nsew", padx=5, pady=10)
         info_frame = LabelFrame(tabManual, text="Información")
         info_frame.grid(row=2, column=0, sticky="nsew", padx=15, pady=5, columnspan=2)
-        
-        portAuto_frame = LabelFrame(tabAuto, text="Secuencia Automática")
-        portAuto_frame.grid(row=0, column=0, sticky="nsew", padx=15, pady=10)
-        infoAuto_frame = LabelFrame(tabAuto, text="Estado")
-        infoAuto_frame.grid(row=1, column=0, sticky="nsew", padx=15, pady=10)
-        startAuto_buttom = Button(tabAuto, text='Empezar', command=self.startAutoCB, width=20)
-        startAuto_buttom.grid(row=2, column=0, padx=10, pady=10)
-        
         
         #Componentes de port_frame
         laser_lbl = Label(port_frame, text="Laser:")
@@ -423,27 +445,7 @@ class GUI():
         scroll.grid(row=0, column=2, sticky='nsew')
         self.msj_text['yscrollcommand'] = scroll.set
         
-        #Componentes de portAuto_frame
-        laserAuto_lbl = Label(portAuto_frame, text="Laser:")
-        laserAuto_lbl.grid(row=0, column=0, padx=10, pady=10)
-        robotAuto_lbl = Label(portAuto_frame, text="Robot:")
-        robotAuto_lbl.grid(row=1, column=0, padx=10, pady=10)
-        laserAuto_port = Message(portAuto_frame, textvariable=self.laserPort, bg="white", justify=LEFT, width=200)
-        laserAuto_port.grid(row=0, column=1)
-        robotAuto_port = Message(portAuto_frame, textvariable=self.robotPort, bg="white", justify=LEFT, width=200)
-        robotAuto_port.grid(row=1, column=1)
         
-        #Componentes de infoAuto_frame
-        self.autoMsj_text = Text(infoAuto_frame, height=17, width=80)
-        self.autoMsj_text.insert(INSERT, "Esperando..\n")
-        self.autoMsj_text.see(END)
-        self.autoMsj_text.grid(row=0, column=0, padx=10, pady=10)
-        
-        scroll = Scrollbar(infoAuto_frame, command=self.autoMsj_text.yview)
-        scroll.grid(row=0, column=2, sticky='nsew')
-        self.autoMsj_text['yscrollcommand'] = scroll.set
-        
-         
 def main():
 
     window = Tk()
