@@ -23,7 +23,6 @@ class laser_options():
         read_inst = [2, 48, 48, 48, 48, 48, 48, 50, 48, 49, 67, 48, 50, 48, 51, 48, 48, 48, 56, 48, 48, 49, 3, 75]
         response = self.wr_port(read_inst)
         
-        
         if response[5] == 48 and response[6] == 48 and response[11] == 48 and response[12] == 48 and response[13] == 48 and response[14] == 48:
             print("Successful communication")
             
@@ -73,7 +72,6 @@ def main():
     laserCOM = "null"    
     
     for port in comPorts:
-                     #VID:PID=067B:2303 --> robot
         if re.search('VID:PID=0590:004D', str(port.hwid)):
             laserCOM = port.device
             
