@@ -2,11 +2,11 @@ from laser_rw import laser_options
 import serial.tools.list_ports
 from tkinter import ttk
 from tkinter import *
+import threading
 import serial
 import time
 import re
 import os
-
     
 class GUI():
     def __init__(self, window):
@@ -164,9 +164,8 @@ class GUI():
         self.readRobotCB()
         self.readLaserCB()
         
-        #if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
-        if self.laserPort.get() == "Sin conexión":
-            self.msj_text.insert(INSERT, "Robot o laser sin conexión...\n")
+        if self.robotPort.get() == "Sin conexión" and self.laserPort.get() == "Sin conexión":
+            self.msj_text.insert(INSERT, "Robot y laser sin conexión...\n")
             self.msj_text.see(END)
         else:
             tableRobot = "table" + str(self.punto) + "0"
@@ -191,33 +190,109 @@ class GUI():
 
 
     def consulta(self,pos_enviada):
-        fin = 0
+        ciclo = True
         robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
         cmd = "3,0,0,0,0,0,0;\n"
         
-        while(fin==0):
+        while ciclo:
             robotS.write(str(cmd).encode('utf-8'))
             pos_actual = robotS.read_until('\n',None)
             
-            x=pos_actual.decode()
-            x=x.split(" ")
-            tam=len(pos_actual)
+            x = pos_actual.decode()
+            x = x.split(" ")
             
+            tam = len(pos_actual)
             pos_actual_int=[0,0,0,0,0,0]
             d=0
-            for i in range(0,tam):
             
+            for i in range(0,tam):
                 if not (x[i]==""):
                     pos_actual_int[d]=float(x[i])
                     d=d+1
                     
-                if(d==5):
+                if(d==6):
                     break
+                
             
             if pos_actual_int[0]==pos_enviada[0] and pos_actual_int[1]==pos_enviada[1] and pos_actual_int[2]==pos_enviada[2] and pos_actual_int[3]==pos_enviada[3] and pos_actual_int[4]==pos_enviada[4] and pos_actual_int[5]==pos_enviada[5]:
-                fin = 1
+                ciclo = False
                 
         robotS.close()
+        
+    def rutina(self):
+        x = [[0,0,0,0,0,0],
+        [57.46,47.6,100.56,0.01,-59.03,0],   #refA
+        [-8.93,47.59,100.56,0.01,-59.03,0],
+        [35.57,103.44,-5.59,0.01,-7.05,0],   #refB
+        [-5.54,103.43,-5.59,0.01,-7.05,0],
+        [35.7,107.89,-10.22,0.06,-7.38,0],   #refC
+        [6.26,107.89,-10.22,0.06,-7.38,0],
+        [45.3,61.69,75.78,0.06,-47.08,0],    #refD
+        [6.45,61.69,75.78,0.06,-47.08,0],
+        [47.81,26.33,132.83,0.06,-70.11,0],  #refE
+        [1.73,26.33,132.83,0.06,-70.11,0],
+        [0,0,0,0,0,0]];
+        
+        medidas = {"2":-75, "4":-46, "6":59, "8":5, "10":-34}
+        piezaBuena = True
+
+        for  i in range(0, len(x)):
+            x1 = "0,"+str(x[i][0])+","+str(x[i][1])+","+ str(x[i][2])+","+str(x[i][3])+","+str(x[i][4])+","+str(x[i][5])+";\n"
+            robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
+            robotS.write(str(x1).encode('utf-8'))
+
+            self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + str(x[i]) + "\n")
+            self.autoMsj_text.see(END)
+            robotS.close()
+        
+            self.consulta(x[i])
+        
+            if i==0:
+                file = open(self.file,"a")  
+                file.write("Nueva pieza\n") 
+                file.close()
+        
+            if i==1 or i==3 or i==5 or i==7 or i==9:
+                self.setZeroCB()
+                self.autoMsj_text.insert(INSERT, "Reiniciando Referencia\n")
+                self.autoMsj_text.see(END)
+            
+            if i==2 or i==4 or i==6 or i==8 or i==10:
+                self.readRobotCB()
+                self.readLaserCB()
+                
+                try:
+                    if not (medidas[str(i)]+0.5 > float(self.laserMeasure.get()) and medidas[str(i)]-0.5 < float(self.laserMeasure.get())):
+                        piezaBuena = False
+                except:
+                    piezaBuena = False
+            
+                self.autoMsj_text.insert(INSERT, "Lectura de laser: " + self.laserMeasure.get() + "\n")
+                self.autoMsj_text.see(END)
+            
+                file = open(self.file,"a") 
+                file.write(self.robotMeasure.get() + " ") 
+                file.write(self.laserMeasure.get() + "\n") 
+                file.close()
+            
+        self.autoMsj_text.insert(INSERT, "Puntos guardados en " + self.file +"\n")
+        self.autoMsj_text.see(END)
+    
+        if piezaBuena:
+            self.autoMsj_text.insert(INSERT, "PIEZA: CORRECTA\n")
+            self.autoMsj_text.see(END)
+        
+            file = open(self.file,"a") 
+            file.write("Pieza correcta\n\n") 
+            file.close()
+        
+        else:
+            self.autoMsj_text.insert(INSERT, "PIEZA INCORRECTA\n")
+            self.autoMsj_text.see(END)
+                        
+            file = open(self.file,"a") 
+            file.write("Pieza incorrecta\n\n") 
+            file.close()
 
 
     def startAutoCB(self):
@@ -229,59 +304,16 @@ class GUI():
         if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
             self.autoMsj_text.insert(INSERT, "Para comenzar, conectar el robot y el laser...\n")
             self.autoMsj_text.see(END)
+            
         else:
-            if os.path.exists(self.file):
-                os.remove(self.file)
-            
-            x=[[0,0,0,0,0,0],
-            [57.46,47.6,100.56,0.01,-59.03,0],   #refA
-            [-8.93,47.59,100.56,0.01,-59.03,0],
-            [35.57,103.44,-5.59,0.01,-7.05,0],   #refB
-            [-5.54,103.43,-5.59,0.01,-7.05,0],
-            [35.7,107.89,-10.22,0.06,-7.38,0],   #refC
-            [6.26,107.89,-10.22,0.06,-7.38,0],
-            [45.3,61.69,75.78,0.06,-47.08,0],    #refD
-            [6.45,61.69,75.78,0.06,-47.08,0],
-            [47.81,26.33,132.83,0.06,-70.11,0],  #refE
-            [1.73,26.33,132.83,0.06,-70.11,0],
-            [0,0,0,0,0,0]];
-            
-            for  i in range(0, len(x)):
-                x1 = "0,"+str(x[i][0])+","+str(x[i][1])+","+ str(x[i][2])+","+str(x[i][3])+","+str(x[i][4])+","+str(x[i][5])+";\n"
-                robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
-                robotS.write(str(x1).encode('utf-8'))
+            t = threading.Thread(target=self.rutina)
+            t.daemon = True 
+            t.start()
 
-                self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + str(x[i]) + "...\n")
-                self.autoMsj_text.see(END)
-                robotS.close()
-                
-                self.consulta(x[i])
-                
-                if i==1 or i==3 or i==5 or i==7 or i==9:
-                    self.setZeroCB()
-                    self.autoMsj_text.insert(INSERT, "Reiniciando Referencia...\n")
-                    self.autoMsj_text.see(END)
-                    
-                if i==2 or i==4 or i==6 or i==8 or i==10:
-                    self.readRobotCB()
-                    self.readLaserCB()
-                    
-                    self.autoMsj_text.insert(INSERT, "Lectura de laser: " + self.laserMeasure.get() + "...\n")
-                    self.autoMsj_text.see(END)
-                    
-                    file = open(self.file,"a") 
-                    file.write(self.robotMeasure.get() + " ") 
-                    file.write(self.laserMeasure.get() + "\n") 
-                    file.close()
-                    
-            self.autoMsj_text.insert(INSERT, "Puntos guardados en " + self.file +" ...\n")
-            self.autoMsj_text.see(END)
-  
-  
+
     #Create GUI
     def create(self):
         self.window.title("Interfaz Robot")
-        
         self.window_height = 560
         self.window_width  = 720
         
@@ -328,7 +360,6 @@ class GUI():
         scroll = Scrollbar(infoAuto_frame, command=self.autoMsj_text.yview)
         scroll.grid(row=0, column=2, sticky='nsew')
         self.autoMsj_text['yscrollcommand'] = scroll.set
-        
         
         #Tab Manual
         port_frame = LabelFrame(tabManual, text="Puertos")
