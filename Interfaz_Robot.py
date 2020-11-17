@@ -219,6 +219,7 @@ class GUI():
                 
         robotS.close()
         
+        
     def rutina(self):
         while self.ciclo:
             # x = [[0,0,0,0,0,0],
@@ -312,9 +313,9 @@ class GUI():
    
 
     def startAutoCB(self):
+    
         if self.empezar == 0:
             self.ciclo = True
-            self.empezar = 1
 
             self.autoMsj_text.insert(INSERT, "Verificando puertos...\n")
             self.autoMsj_text.see(END)
@@ -325,6 +326,7 @@ class GUI():
                 self.autoMsj_text.see(END)
         
             else:
+                self.empezar = 1
                 t = threading.Thread(target=self.rutina)
                 t.daemon = True 
                 t.start()
@@ -332,8 +334,10 @@ class GUI():
         
     def endAutoCB(self):
         self.ciclo = False
-        self.autoMsj_text.insert(INSERT, "Al terminar el ciclo, se detendrá el proceso...\n")
-        self.autoMsj_text.see(END)
+        
+        if self.empezar ==1:
+            self.autoMsj_text.insert(INSERT, "Al terminar el ciclo, se detendrá el proceso...\n")
+            self.autoMsj_text.see(END)
 
 
     #Create GUI
