@@ -17,6 +17,8 @@ class GUI():
         self.laserMeasure = StringVar()
         self.robotMeasure = StringVar()
         self.punto = 0
+        self.ciclo = False
+        self.empezar = 0
 
 
     #Funciones
@@ -59,7 +61,7 @@ class GUI():
                 try:
                     self.msj_text.insert(INSERT, "Enviando posición al robot...\n")
                     self.msj_text.see(END)
-                    robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
+                    robotS = serial.Serial(self.robotPort.get(), 115200, timeout=0.1)
                     robotS.flushInput()
                     robotS.flushOutput()
                     robotS.flush() 
@@ -118,13 +120,12 @@ class GUI():
             self.msj_text.insert(INSERT, "Para leer posición, verificar conexión del robot...\n")
             self.msj_text.see(END)
         else:
-        
             pose = "3,0,0,0,0,0,0;\n"
             
             try:
                 self.msj_text.insert(INSERT, "Leyendo posición al robot...\n")
                 self.msj_text.see(END)
-                robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
+                robotS = serial.Serial(self.robotPort.get(), 115200, timeout=0.1)
                 robotS.flushInput()
                 robotS.flushOutput()
                 robotS.flush() 
@@ -191,7 +192,7 @@ class GUI():
 
     def consulta(self,pos_enviada):
         ciclo = True
-        robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
+        robotS = serial.Serial(self.robotPort.get(), 115200, timeout=0.1)
         cmd = "3,0,0,0,0,0,0;\n"
         
         while ciclo:
@@ -213,109 +214,133 @@ class GUI():
                 if(d==6):
                     break
                 
-            
             if pos_actual_int[0]==pos_enviada[0] and pos_actual_int[1]==pos_enviada[1] and pos_actual_int[2]==pos_enviada[2] and pos_actual_int[3]==pos_enviada[3] and pos_actual_int[4]==pos_enviada[4] and pos_actual_int[5]==pos_enviada[5]:
                 ciclo = False
                 
         robotS.close()
         
     def rutina(self):
-        x = [[0,0,0,0,0,0],
-        [57.46,47.6,100.56,0.01,-59.03,0],   #refA
-        [-8.93,47.59,100.56,0.01,-59.03,0],
-        [35.57,103.44,-5.59,0.01,-7.05,0],   #refB
-        [-5.54,103.43,-5.59,0.01,-7.05,0],
-        [35.7,107.89,-10.22,0.06,-7.38,0],   #refC
-        [6.26,107.89,-10.22,0.06,-7.38,0],
-        [45.3,61.69,75.78,0.06,-47.08,0],    #refD
-        [6.45,61.69,75.78,0.06,-47.08,0],
-        [47.81,26.33,132.83,0.06,-70.11,0],  #refE
-        [1.73,26.33,132.83,0.06,-70.11,0],
-        [0,0,0,0,0,0]];
-        
-        medidas = {"2":-75, "4":-46, "6":59, "8":5, "10":-34}
-        piezaBuena = True
+        while self.ciclo:
+            # x = [[0,0,0,0,0,0],
+            # [57.46,47.6,100.56,0.01,-59.03,0],   #refA
+            # [-8.93,47.59,100.56,0.01,-59.03,0],
+            # [35.57,103.44,-5.59,0.01,-7.05,0],   #refB
+            # [-5.54,103.43,-5.59,0.01,-7.05,0],
+            # [35.7,107.89,-10.22,0.06,-7.38,0],   #refC
+            # [6.26,107.89,-10.22,0.06,-7.38,0],
+            # [45.3,61.69,75.78,0.06,-47.08,0],    #refD
+            # [6.45,61.69,75.78,0.06,-47.08,0],
+            # [47.81,26.33,132.83,0.06,-70.11,0],  #refE
+            # [1.73,26.33,132.83,0.06,-70.11,0],
+            # [0,0,0,0,0,0]];
+            
+            x = [[0,0,0,0,0,0],
+            [50.91,49.41,130.37,12.99,-95.73,-0.25],#ref 1
+            [10.68,49.4,130.37,12.99,-95.73,-0.25],
+            [60.97,46.46,111.1,13.71,-75.02,-0.25],#ref 2
+            [-8.74,46.43,111.1,13.72,-75.02,-0.25],
+            [-43.69,84.26,28.1,8.48,-29.64,-0.23],#ref 3
+            [-7.95,84.26,28.1,8.48,-29.64,-0.23],
+            [31.23,110.25,13.89,8.87,-25.92,-75.67],#ref 4
+            [31.23,109.58,13.89,8.87,-25.92,-75.67],
+            [0,0,0,0,0,0]];
+            
+            medidas = {"2":-75, "4":-46, "6":59, "8":5, "10":-34}
+            piezaBuena = True
 
-        for  i in range(0, len(x)):
-            x1 = "0,"+str(x[i][0])+","+str(x[i][1])+","+ str(x[i][2])+","+str(x[i][3])+","+str(x[i][4])+","+str(x[i][5])+";\n"
-            robotS = serial.Serial(self.robotPort.get(), 115200, timeout=1)
-            robotS.write(str(x1).encode('utf-8'))
+            for  i in range(0, len(x)):
+                x1 = "0,"+str(x[i][0])+","+str(x[i][1])+","+ str(x[i][2])+","+str(x[i][3])+","+str(x[i][4])+","+str(x[i][5])+";\n"
+                robotS = serial.Serial(self.robotPort.get(), 115200, timeout=0.1)
+                robotS.write(str(x1).encode('utf-8'))
 
-            self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + str(x[i]) + "\n")
-            self.autoMsj_text.see(END)
-            robotS.close()
-        
-            self.consulta(x[i])
-        
-            if i==0:
-                file = open(self.file,"a")  
-                file.write("Nueva pieza\n") 
-                file.close()
-        
-            if i==1 or i==3 or i==5 or i==7 or i==9:
-                self.setZeroCB()
-                self.autoMsj_text.insert(INSERT, "Reiniciando Referencia\n")
+                self.autoMsj_text.insert(INSERT, "Posición " + str(i+1) + " enviada: " + str(x[i]) + "\n")
                 self.autoMsj_text.see(END)
+                robotS.close()
             
-            if i==2 or i==4 or i==6 or i==8 or i==10:
-                self.readRobotCB()
-                self.readLaserCB()
+                self.consulta(x[i])
+            
+                if i==0:
+                    file = open(self.file,"a")  
+                    file.write("Nueva pieza\n") 
+                    file.close()
+            
+                if i==1 or i==3 or i==5 or i==7 or i==9:
+                    self.setZeroCB()
+                    self.autoMsj_text.insert(INSERT, "Reiniciando Referencia\n")
+                    self.autoMsj_text.see(END)
                 
-                try:
-                    if not (medidas[str(i)]+0.5 > float(self.laserMeasure.get()) and medidas[str(i)]-0.5 < float(self.laserMeasure.get())):
+                if i==2 or i==4 or i==6 or i==8 or i==10:
+                    self.readRobotCB()
+                    self.readLaserCB()
+                    
+                    try:
+                        if not (medidas[str(i)]+0.5 > float(self.laserMeasure.get()) and medidas[str(i)]-0.5 < float(self.laserMeasure.get())):
+                            piezaBuena = False
+                    except:
                         piezaBuena = False
-                except:
-                    piezaBuena = False
-            
-                self.autoMsj_text.insert(INSERT, "Lectura de laser: " + self.laserMeasure.get() + "\n")
+                
+                    self.autoMsj_text.insert(INSERT, "Lectura de laser: " + self.laserMeasure.get() + "\n")
+                    self.autoMsj_text.see(END)
+                
+                    file = open(self.file,"a") 
+                    file.write(self.robotMeasure.get() + " ") 
+                    file.write(self.laserMeasure.get() + "\n") 
+                    file.close()
+                
+            self.autoMsj_text.insert(INSERT, "Puntos guardados en " + self.file +"\n")
+            self.autoMsj_text.see(END)
+        
+            if piezaBuena:
+                self.autoMsj_text.insert(INSERT, "PIEZA: CORRECTA\n")
                 self.autoMsj_text.see(END)
             
                 file = open(self.file,"a") 
-                file.write(self.robotMeasure.get() + " ") 
-                file.write(self.laserMeasure.get() + "\n") 
+                file.write("Pieza correcta\n\n") 
                 file.close()
             
-        self.autoMsj_text.insert(INSERT, "Puntos guardados en " + self.file +"\n")
+            else:
+                self.autoMsj_text.insert(INSERT, "PIEZA INCORRECTA\n")
+                self.autoMsj_text.see(END)
+                            
+                file = open(self.file,"a") 
+                file.write("Pieza incorrecta\n\n") 
+                file.close()
+        
+        self.autoMsj_text.insert(INSERT, "Proceso finalizado...\n")
         self.autoMsj_text.see(END)
-    
-        if piezaBuena:
-            self.autoMsj_text.insert(INSERT, "PIEZA: CORRECTA\n")
-            self.autoMsj_text.see(END)
-        
-            file = open(self.file,"a") 
-            file.write("Pieza correcta\n\n") 
-            file.close()
-        
-        else:
-            self.autoMsj_text.insert(INSERT, "PIEZA INCORRECTA\n")
-            self.autoMsj_text.see(END)
-                        
-            file = open(self.file,"a") 
-            file.write("Pieza incorrecta\n\n") 
-            file.close()
-
+        self.empezar = 0
+   
 
     def startAutoCB(self):
-        self.autoMsj_text.insert(INSERT, "Verificando puertos...\n")
-        self.autoMsj_text.see(END)
-        
-        self.actualizarCB()
-        
-        if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
-            self.autoMsj_text.insert(INSERT, "Para comenzar, conectar el robot y el laser...\n")
+        if self.empezar == 0:
+            self.ciclo = True
+            self.empezar = 1
+
+            self.autoMsj_text.insert(INSERT, "Verificando puertos...\n")
             self.autoMsj_text.see(END)
-            
-        else:
-            t = threading.Thread(target=self.rutina)
-            t.daemon = True 
-            t.start()
+            self.actualizarCB()
+    
+            if self.robotPort.get() == "Sin conexión" or self.laserPort.get() == "Sin conexión":
+                self.autoMsj_text.insert(INSERT, "Para comenzar, conectar el robot y el laser...\n")
+                self.autoMsj_text.see(END)
+        
+            else:
+                t = threading.Thread(target=self.rutina)
+                t.daemon = True 
+                t.start()
+        
+        
+    def endAutoCB(self):
+        self.ciclo = False
+        self.autoMsj_text.insert(INSERT, "Al terminar el ciclo, se detendrá el proceso...\n")
+        self.autoMsj_text.see(END)
 
 
     #Create GUI
     def create(self):
         self.window.title("Interfaz Robot")
         self.window_height = 560
-        self.window_width  = 720
+        self.window_width  = 735
         
         screen_width = self.window.winfo_screenwidth()
         screen_height = self.window.winfo_screenheight()
@@ -339,7 +364,9 @@ class GUI():
         infoAuto_frame = LabelFrame(tabAuto, text="Estado")
         infoAuto_frame.grid(row=1, column=0, sticky="nsew", padx=15, pady=10)
         startAuto_buttom = Button(tabAuto, text='Empezar', command=self.startAutoCB, width=20)
-        startAuto_buttom.grid(row=2, column=0, padx=10, pady=10)
+        startAuto_buttom.grid(row=2, column=0, padx=10, pady=2)
+        endAuto_buttom = Button(tabAuto, text='Finalizar', command=self.endAutoCB, width=20)
+        endAuto_buttom.grid(row=3, column=0, padx=10, pady=2)
         
         #Componentes de portAuto_frame
         laserAuto_lbl = Label(portAuto_frame, text="Laser:")
@@ -478,7 +505,6 @@ class GUI():
         
         
 def main():
-
     window = Tk()
     gui = GUI(window)
     gui.create()
